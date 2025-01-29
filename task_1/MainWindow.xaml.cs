@@ -51,74 +51,46 @@ namespace task_1
             }
         }
 
-        private async void BtnEncrypt_Click(object sender, RoutedEventArgs e)
+        private async void BtnEncrypt_Click(object sender, RoutedEventArgs e) => await ProcessFilesAsync(true);
+
+        private async void BtnDecrypt_Click(object sender, RoutedEventArgs e) => await ProcessFilesAsync(false);
+
+        private async Task ProcessFilesAsync(bool isEncryption)
         {
-            if (FileList.Items.Count == 0 || string.IsNullOrEmpty(TxtKey.Text) || TxtKey.Text == "Enter Key")
-            {
-                MessageBox.Show("Please select files and enter a key.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
+            if (!ValidateInput()) return;
 
             ProgressBar.Value = 0;
             var progress = new Progress<int>(value => Dispatcher.Invoke(() => ProgressBar.Value = value));
+            var processedFiles = new StringBuilder();
+            DateTime startTime = DateTime.Now;
 
             try
             {
                 foreach (string filePath in FileList.Items)
                 {
-                    await EncryptFileAsync(filePath, TxtKey.Text, progress);
+                    string processedFile = await ProcessFileAsync(filePath, TxtKey.Text, isEncryption, progress);
+                    processedFiles.AppendLine($"{(isEncryption ? "Encrypted" : "Decrypted")}: {processedFile}");
                 }
 
-                MessageBox.Show("All files encrypted successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                TimeSpan elapsedTime = DateTime.Now - startTime;
+                MessageBox.Show($"File {(isEncryption ? "encrypted" : "decrypted")} successfully!\n\n" +
+                                $"{processedFiles}Time elapsed: {elapsedTime}",
+                                "Operation Complete", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"An error occurred during encryption: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Error during {(isEncryption ? "encryption" : "decryption")}: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        private async void BtnDecrypt_Click(object sender, RoutedEventArgs e)
+        private bool ValidateInput()
         {
             if (FileList.Items.Count == 0 || string.IsNullOrEmpty(TxtKey.Text) || TxtKey.Text == "Enter Key")
             {
                 MessageBox.Show("Please select files and enter a key.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
+                return false;
             }
-
-            ProgressBar.Value = 0;
-            var progress = new Progress<int>(value => Dispatcher.Invoke(() => ProgressBar.Value = value));
-
-            try
-            {
-                foreach (string filePath in FileList.Items)
-                {
-                    await DecryptFileAsync(filePath, TxtKey.Text, progress);
-                }
-
-                MessageBox.Show("All files decrypted successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"An error occurred during decryption: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private async Task EncryptFileAsync(string filePath, string key, IProgress<int> progress)
-        {
-            DateTime startTime = DateTime.Now;
-            string encryptedFile = await Task.Run(() => ProcessFileAsync(filePath, key, true, progress));
-            TimeSpan elapsedTime = DateTime.Now - startTime;
-
-            MessageBox.Show($"File encrypted successfully!\n\nFile: {encryptedFile}\nTime: {elapsedTime}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        private async Task DecryptFileAsync(string filePath, string key, IProgress<int> progress)
-        {
-            DateTime startTime = DateTime.Now;
-            string decryptedFile = await Task.Run(() => ProcessFileAsync(filePath, key, false, progress));
-            TimeSpan elapsedTime = DateTime.Now - startTime;
-
-            MessageBox.Show($"File decrypted successfully!\n\nFile: {decryptedFile}\nTime: {elapsedTime}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            return true;
         }
 
         private async Task<string> ProcessFileAsync(string filePath, string key, bool isEncryption, IProgress<int> progress)
