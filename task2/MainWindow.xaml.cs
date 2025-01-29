@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using task2;
 
 namespace ProcessManager
 {
@@ -17,7 +18,6 @@ namespace ProcessManager
             InitializeComponent();
             LoadProcessesAsync();
 
-          
             _updateTimer = new DispatcherTimer
             {
                 Interval = TimeSpan.FromSeconds(2) 
@@ -31,19 +31,11 @@ namespace ProcessManager
             try
             {
                 var processes = await Task.Run(() => Process.GetProcesses()
-                    .Where(p => !string.IsNullOrEmpty(p.MainWindowTitle)) 
-                    .Select(p => new
-                    {
-                        Name = p.ProcessName,
-                        WindowTitle = p.MainWindowTitle,
-                        Memory = p.WorkingSet64 / 1024 / 1024, 
-                        StartTime = SafeGetStartTime(p),
-                        Priority = p.BasePriority,
-                        Threads = p.Threads.Count,
-                        Id = p.Id
-                    }).ToList());
+                    .Where(p => !string.IsNullOrEmpty(p.MainWindowTitle))
+                    .Select(p => new ProcessInfo(p))
+                    .ToList());
 
-                ProcessGrid.ItemsSource = processes; 
+                ProcessGrid.ItemsSource = processes;
             }
             catch (Exception ex)
             {
@@ -51,31 +43,16 @@ namespace ProcessManager
             }
         }
 
-        private DateTime? SafeGetStartTime(Process process)
-        {
-            try
-            {
-                return process.StartTime;
-            }
-            catch
-            {
-                return null; 
-            }
-        }
-
         private void KillProcess_Click(object sender, RoutedEventArgs e)
         {
-            if (ProcessGrid.SelectedItem != null)
+            if (ProcessGrid.SelectedItem is ProcessInfo selectedProcess)
             {
                 try
                 {
-                    var selectedProcess = (dynamic)ProcessGrid.SelectedItem;
-                    var process = Process.GetProcessById((int)selectedProcess.Id);
-
-                  
+                    var process = Process.GetProcessById(selectedProcess.Id);
                     Task.Run(() => process.Kill()).Wait();
 
-                    LoadProcessesAsync(); 
+                    LoadProcessesAsync();
                 }
                 catch (Exception ex)
                 {
@@ -86,17 +63,14 @@ namespace ProcessManager
 
         private void ChangePriority_Click(object sender, RoutedEventArgs e)
         {
-            if (ProcessGrid.SelectedItem != null)
+            if (ProcessGrid.SelectedItem is ProcessInfo selectedProcess)
             {
                 try
                 {
-                    var selectedProcess = (dynamic)ProcessGrid.SelectedItem;
-                    var process = Process.GetProcessById((int)selectedProcess.Id);
-
-                    
+                    var process = Process.GetProcessById(selectedProcess.Id);
                     Task.Run(() => process.PriorityClass = ProcessPriorityClass.High).Wait();
 
-                    LoadProcessesAsync(); 
+                    LoadProcessesAsync();
                 }
                 catch (Exception ex)
                 {
@@ -107,17 +81,12 @@ namespace ProcessManager
 
         private void StartApp_Click(object sender, RoutedEventArgs e)
         {
-            var button = sender as Button;
-            string appName = button?.Tag.ToString();
-
-            if (!string.IsNullOrEmpty(appName))
+            if (sender is Button button && button.Tag is string appName)
             {
                 try
                 {
-                    
                     Process.Start(appName);
-
-                    LoadProcessesAsync(); 
+                    LoadProcessesAsync();
                 }
                 catch (Exception ex)
                 {
