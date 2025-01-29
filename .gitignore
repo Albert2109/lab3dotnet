@@ -1,0 +1,100 @@
+# Відкинути всі системні файли та кеші, створені Visual Studio
+## Вікна, середовища розробки
+.vs/
+.vscode/
+*.code-workspace
+.idea/
+
+# Build-тексти та файли
+bin/
+obj/
+[Bb]uild/
+[Bb]uilds/
+
+# Вихідні документи
+*.user
+*.suo
+*.log
+*.tlog
+*.rsuser
+*.sln.docstates
+*.pidb
+*.pdb
+
+# Конфігурації з налагодження та кешування
+*.localhistory
+*.sln.docstates
+*.ncrunchsolution
+.ncrunchproject
+*.ntvs_analysis.dat
+node_modules/
+npm-debug.log*
+
+# Файли налаштувань та сертифікатів
+*.userosscache
+*.suo
+*.sln.docstates
+.vscode/
+
+# Резервні копії файлів
+*.bak
+*.swp
+*.orig
+*.old
+*~
+
+# Інші системні файли та дані
+**/Thumbs.db
+**/Desktop.ini
+**/$RECYCLE.BIN/
+*~.tmp
+*~.TMP
+~$*
+
+# ASP.NET/MVC специфічні файли
+*.Publish.xml
+*.pubxml
+*.publishproj
+
+# NuGet пакети
+*.nupkg
+*.snupkg
+*.symbols.nupkg
+.nuget/
+# Папка з відновленими NuGet пакетами
+packages/
+!packages/build/
+!packages/repositories.config
+project.lock.json
+
+# Специфічні для компіляції файли
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# .NET специфічні файли
+project.lock.json
+project.fragment.lock.json
+artifacts/
+# Папка для локальних налаштувань NuGet пакету
+.nuget/
+# Налаштування зависимостей для .NET
+project.assets.json
+# Тексти, згенеровані під час компіляції
+*.dll
+*.exe
+*.app
+*.log
+*.json
+*.csproj.user
+*.csproj.nuget.g.props
+*.csproj.nuget.g.targets
+
+# Mac специфічні файли (якщо використовуєте MacOS)
+.DS_Store
+
+# Visual Studio Code специфічні файли
+.vscode/
+
+# Папка з тимчасовими файлами та кешами для розробки на .NET
+.temp/
