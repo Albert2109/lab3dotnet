@@ -93,65 +93,60 @@ namespace task_1
             return true;
         }
 
+        private async Task<byte[]> SetupIVAsync(bool isEncryption, FileStream inputFileStream, FileStream outputFileStream, Aes aes)
+        {
+            byte[] iv = new byte[16];
+
+            if (isEncryption)
+            {
+                new RNGCryptoServiceProvider().GetBytes(iv);
+                aes.IV = iv;
+                await outputFileStream.WriteAsync(iv, 0, iv.Length);
+            }
+            else
+            {
+                await inputFileStream.ReadAsync(iv, 0, iv.Length);
+                aes.IV = iv;
+            }
+
+            return iv;
+        }
+
+        private async Task EncryptOrDecryptStreamAsync(FileStream inputFileStream, FileStream outputFileStream, Aes aes, bool isEncryption, IProgress<int> progress)
+        {
+            ICryptoTransform transform = isEncryption ? aes.CreateEncryptor() : aes.CreateDecryptor();
+            using (CryptoStream cryptoStream = new CryptoStream(outputFileStream, transform, CryptoStreamMode.Write))
+            {
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                long totalBytesRead = 0;
+                long totalBytes = inputFileStream.Length - (isEncryption ? 0 : 16);
+
+                while ((bytesRead = await inputFileStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                {
+                    await cryptoStream.WriteAsync(buffer, 0, bytesRead);
+                    totalBytesRead += bytesRead;
+                    progress.Report((int)((double)totalBytesRead / totalBytes * 100));
+                    await Task.Yield();
+                }
+            }
+        }
+
         private async Task<string> ProcessFileAsync(string filePath, string key, bool isEncryption, IProgress<int> progress)
         {
             string outputFile = isEncryption ? filePath + ".enc" : filePath.Replace(".enc", "");
             byte[] keyBytes = Encoding.UTF8.GetBytes(key.PadRight(16).Substring(0, 16));
-
-            byte[] iv = new byte[16];
-            if (isEncryption)
-            {
-                using (var rng = new RNGCryptoServiceProvider())
-                {
-                    rng.GetBytes(iv);
-                }
-            }
 
             using (FileStream inputFileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             using (FileStream outputFileStream = new FileStream(outputFile, FileMode.Create, FileAccess.Write))
             using (Aes aes = Aes.Create())
             {
                 aes.Key = keyBytes;
-
-                if (isEncryption)
-                {
-                    aes.IV = iv;
-                    await outputFileStream.WriteAsync(iv, 0, iv.Length); 
-                }
-                else
-                {
-                    await inputFileStream.ReadAsync(iv, 0, iv.Length); 
-                    aes.IV = iv;
-                }
-
-                ICryptoTransform transform = isEncryption ? aes.CreateEncryptor() : aes.CreateDecryptor();
-                using (CryptoStream cryptoStream = new CryptoStream(outputFileStream, transform, CryptoStreamMode.Write))
-                {
-                    byte[] buffer = new byte[4096];
-                    int bytesRead;
-                    long totalBytesRead = 0;
-                    long totalBytes = isEncryption
-                        ? inputFileStream.Length
-                        : inputFileStream.Length - iv.Length; 
-
-                    while ((bytesRead = await inputFileStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
-                    {
-                        await cryptoStream.WriteAsync(buffer, 0, bytesRead);
-                        totalBytesRead += bytesRead;
-
-                      
-                        int progressPercentage = (int)((double)totalBytesRead / totalBytes * 100);
-                        progress.Report(progressPercentage);
-
-                       
-                        await Task.Yield();
-                    }
-                }
+                byte[] iv = await SetupIVAsync(isEncryption, inputFileStream, outputFileStream, aes);
+                await EncryptOrDecryptStreamAsync(inputFileStream, outputFileStream, aes, isEncryption, progress);
             }
 
             return outputFile;
         }
-
-
     }
 }
